@@ -39,6 +39,7 @@
         body {
             background-color: var(--color-bg);
             color: var(--color-text);
+            overflow-x: hidden;
         }
         
         .sidebar {
@@ -52,6 +53,9 @@
         
         .prose {
             max-width: 65ch;
+            width: 100%;
+            overflow-wrap: break-word;
+            word-wrap: break-word;
         }
         
         .prose h1 { font-size: 2.25rem; font-weight: 800; margin-top: 0; margin-bottom: 1rem; }
@@ -62,13 +66,13 @@
         .prose ul, .prose ol { margin-bottom: 1rem; padding-left: 1.5rem; }
         .prose li { margin-bottom: 0.5rem; }
         .prose code { background-color: var(--color-bg-secondary); padding: 0.2rem 0.4rem; border-radius: 0.25rem; font-size: 0.875rem; }
-        .prose pre { background-color: #1e293b; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; margin-bottom: 1rem; }
-        .prose pre code { background-color: transparent; padding: 0; }
+        .prose pre { background-color: #1e293b; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; margin-bottom: 1rem; max-width: 100%; }
+        .prose pre code { background-color: transparent; padding: 0; white-space: pre; }
         .prose a { color: var(--color-primary); text-decoration: none; }
         .prose a:hover { text-decoration: underline; }
         .prose blockquote { border-left: 4px solid var(--color-primary); padding-left: 1rem; margin: 1rem 0; font-style: italic; }
-        .prose table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
-        .prose th, .prose td { border: 1px solid var(--color-border); padding: 0.5rem; text-align: left; }
+        .prose table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; display: block; overflow-x: auto; }
+        .prose th, .prose td { border: 1px solid var(--color-border); padding: 0.5rem; text-align: left; white-space: nowrap; }
         .prose th { background-color: var(--color-bg-secondary); font-weight: 600; }
         
         .heading-anchor { 
@@ -114,6 +118,29 @@
             background-color: #fef08a;
             padding: 0.1rem 0.2rem;
         }
+        
+        /* Mobile sidebar wider */
+        @media (max-width: 1023px) {
+            #sidebar {
+                width: 80%;
+                max-width: 320px;
+                left: 0;
+                top: 73px; /* Below header and mobile search */
+                height: calc(100vh - 73px);
+            }
+            
+            .prose {
+                max-width: 100%;
+            }
+            
+            .prose pre {
+                font-size: 0.875rem;
+            }
+            
+            .prose table {
+                font-size: 0.875rem;
+            }
+        }
     </style>
 </head>
 <body class="antialiased">
@@ -132,8 +159,8 @@
             </div>
             
             <div class="flex items-center space-x-2">
-                <!-- Search -->
-                <div class="relative">
+                <!-- Search (Desktop only) -->
+                <div class="relative hidden md:block">
                     <input 
                         type="text" 
                         id="search-input" 
@@ -191,9 +218,26 @@
         </div>
     </header>
 
+    <!-- Mobile Search Bar (below header) -->
+    <div class="md:hidden border-b px-4 py-3" style="background-color: var(--color-bg); border-color: var(--color-border);">
+        <div class="relative">
+            <input 
+                type="text" 
+                id="search-input-mobile" 
+                placeholder="Search documentation..." 
+                class="w-full px-4 py-2 rounded-lg border"
+                style="background-color: var(--color-bg-secondary); border-color: var(--color-border);"
+            >
+            <div id="search-results-mobile" class="absolute top-full mt-2 w-full rounded-lg shadow-lg hidden" style="background-color: var(--color-bg); border: 1px solid var(--color-border); max-height: 400px; overflow-y: auto; z-index: 40;"></div>
+        </div>
+    </div>
+
+    <!-- Mobile sidebar backdrop -->
+    <div id="sidebar-backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden lg:hidden"></div>
+
     <div class="flex">
         <!-- Sidebar -->
-        <aside id="sidebar" class="sidebar w-64 h-screen sticky top-16 overflow-y-auto hidden lg:block">
+        <aside id="sidebar" class="sidebar w-64 lg:w-64 h-screen overflow-y-auto hidden lg:block fixed lg:sticky lg:top-16 top-0 lg:relative z-40">
             <nav class="p-4">
                 <?php echo renderNavigation($navigation, $path); ?>
                 
@@ -236,8 +280,8 @@
         </aside>
 
         <!-- Main Content -->
-        <main class="flex-1 px-4 py-8 lg:px-8">
-            <div class="content-wrapper mx-auto">
+        <main class="flex-1 px-4 py-8 lg:px-8 min-w-0">
+            <div class="content-wrapper mx-auto max-w-full">
                 <article class="prose">
                     <?php echo $content; ?>
                 </article>
@@ -329,52 +373,66 @@
         });
 
         // Search functionality
-        const searchInput = document.getElementById('search-input');
-        const searchResults = document.getElementById('search-results');
-        let searchTimeout;
-
-        searchInput.addEventListener('input', (e) => {
-            clearTimeout(searchTimeout);
-            const query = e.target.value.trim();
+        function setupSearch(inputId, resultsId) {
+            const searchInput = document.getElementById(inputId);
+            const searchResults = document.getElementById(resultsId);
             
-            if (query.length < 2) {
-                searchResults.classList.add('hidden');
-                return;
-            }
+            if (!searchInput || !searchResults) return;
+            
+            let searchTimeout;
 
-            searchTimeout = setTimeout(() => {
-                fetch(`/api/search?q=${encodeURIComponent(query)}`)
-                    .then(response => response.json())
-                    .then(results => {
-                        if (results.length === 0) {
-                            searchResults.innerHTML = '<div class="p-4 text-sm" style="color: var(--color-text-secondary);">No results found</div>';
-                        } else {
-                            searchResults.innerHTML = results.map(result => `
-                                <div class="search-result" onclick="window.location.href='/${result.path}'">
-                                    <div class="font-semibold">${result.title}</div>
-                                    <div class="text-sm mt-1" style="color: var(--color-text-secondary);">${result.excerpt}</div>
-                                </div>
-                            `).join('');
-                        }
-                        searchResults.classList.remove('hidden');
-                    });
-            }, 300);
-        });
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                const query = e.target.value.trim();
+                
+                if (query.length < 2) {
+                    searchResults.classList.add('hidden');
+                    return;
+                }
 
-        // Close search results when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
-                searchResults.classList.add('hidden');
-            }
-        });
+                searchTimeout = setTimeout(() => {
+                    fetch(`/api/search?q=${encodeURIComponent(query)}`)
+                        .then(response => response.json())
+                        .then(results => {
+                            if (results.length === 0) {
+                                searchResults.innerHTML = '<div class="p-4 text-sm" style="color: var(--color-text-secondary);">No results found</div>';
+                            } else {
+                                searchResults.innerHTML = results.map(result => `
+                                    <div class="search-result" onclick="window.location.href='/${result.path}'">
+                                        <div class="font-semibold">${result.title}</div>
+                                        <div class="text-sm mt-1" style="color: var(--color-text-secondary);">${result.excerpt}</div>
+                                    </div>
+                                `).join('');
+                            }
+                            searchResults.classList.remove('hidden');
+                        });
+                }, 300);
+            });
+
+            // Close search results when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                    searchResults.classList.add('hidden');
+                }
+            });
+        }
+        
+        // Setup both desktop and mobile search
+        setupSearch('search-input', 'search-results');
+        setupSearch('search-input-mobile', 'search-results-mobile');
 
         // Sidebar toggle for mobile
         const sidebarToggle = document.getElementById('sidebar-toggle');
         const sidebar = document.getElementById('sidebar');
+        const sidebarBackdrop = document.getElementById('sidebar-backdrop');
         
-        sidebarToggle?.addEventListener('click', () => {
+        function toggleSidebar() {
             sidebar.classList.toggle('hidden');
-        });
+            sidebarBackdrop.classList.toggle('hidden');
+        }
+        
+        sidebarToggle?.addEventListener('click', toggleSidebar);
+        sidebarBackdrop?.addEventListener('click', toggleSidebar);
 
         // Smooth scrolling for anchor links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
