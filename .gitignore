@@ -1,0 +1,28 @@
+# Composer (optional - not required)
+/vendor/
+composer.lock
+
+# Keep lib folder - it contains required dependencies
+!/lib/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+
+# Cache
+/cache/
+/tmp/
