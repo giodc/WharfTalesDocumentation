@@ -1,7 +1,6 @@
 <?php
 /**
  * WharfDocs - Static PHP Documentation Generator
- * Similar to Docus.dev functionality
  */
 
 // Security Headers

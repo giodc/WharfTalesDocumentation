@@ -213,9 +213,17 @@ class DocumentationEngine
 
     private function generateEditUrl($filePath)
     {
-        // This can be configured to point to your Git repository
+        // Check if edit link feature is enabled and GitHub repo is configured
+        if (empty($this->config['features']['edit_link']) || empty($this->config['github_repo'])) {
+            return '#';
+        }
+        
+        // Get relative path from docs directory
         $relativePath = str_replace($this->docsPath . '/', '', $filePath);
-        return '#'; // Placeholder - configure with your repo URL
+        
+        // Build GitHub edit URL
+        $githubRepo = rtrim($this->config['github_repo'], '/');
+        return $githubRepo . '/blob/main/docs/' . $relativePath;
     }
 
     private function getPrevNextPages($currentPath)
