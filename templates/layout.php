@@ -297,7 +297,7 @@
                     <?php if (!empty($GLOBALS['config']['copyright'])): ?>
                         <?php echo htmlspecialchars($GLOBALS['config']['copyright']); ?>
                     <?php else: ?>
-                        © <?php echo date('Y'); ?> <?php echo htmlspecialchars($GLOBALS['config']['site_name'] ?? 'Documentation'); ?>. All rights reserved.
+                        Powered by <a href="https://github.com/wharftales/wharfdocs" target="_blank" rel="noopener noreferrer" style="color: var(--color-primary);" class="hover:underline">WharfDocs</a>
                     <?php endif; ?>
                 </div>
                 

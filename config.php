@@ -8,7 +8,7 @@ return [
     'github_repo' => 'https://github.com/wharftales/wharfdocs', // Set your GitHub repo URL for edit links
     'logo' => '/assets/logo.svg', // Logo for light mode (leave empty to hide)
     'logo_dark' => '/assets/logo-dark.svg', // Logo for dark mode (leave empty to use light logo)
-    'copyright' => 'WharfDocs is an open source project.', // Optional: Custom copyright text (leave empty for default)
+    'copyright' => '', // Optional: Custom copyright text (leave empty to show 'Powered by WharfDocs')
     'social_links' => [
         'github' => 'https://github.com/wharftales/wharfdocs',
     ],
